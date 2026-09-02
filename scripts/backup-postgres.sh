@@ -39,12 +39,15 @@ fi
 timestamp="$(date -u +'%Y%m%dT%H%M%SZ')"
 partial_path="${backup_dir}/new-api_${timestamp}.dump.partial"
 backup_path="${partial_path%.partial}"
-gzip_partial_path="${backup_path}.gz.partial"
-checksum_partial_path="${gzip_partial_path}.sha256"
+gzip_path="${backup_path}.gz"
+gzip_partial_path="${gzip_path}.partial"
+checksum_path="${gzip_path}.sha256"
+checksum_partial_path="${checksum_path}.partial"
 config_partial_path="${project_dir}/.new-api-env-${timestamp}.enc.partial"
 
 cleanup() {
-  rm -f -- "${partial_path}" "${gzip_partial_path}" "${checksum_partial_path}" "${config_partial_path}"
+  rm -f -- "${partial_path}" "${gzip_partial_path}" "${gzip_path}" \
+    "${checksum_partial_path}" "${checksum_path}" "${config_partial_path}"
 }
 trap cleanup EXIT
 
@@ -77,15 +80,19 @@ if [[ "${COS_BACKUP_ENABLED:-0}" == "1" ]]; then
   }
 
   gzip -c -- "${backup_path}" >"${gzip_partial_path}"
-  sha256sum "${gzip_partial_path}" >"${checksum_partial_path}"
+  mv -- "${gzip_partial_path}" "${gzip_path}"
+  # Write the checksum after the atomic rename so it contains the final COS
+  # filename, rather than the temporary local staging filename.
+  sha256sum "${gzip_path}" >"${checksum_partial_path}"
+  mv -- "${checksum_partial_path}" "${checksum_path}"
   age -r "${recipient}" -o "${config_partial_path}" -- "${project_dir}/.env"
 
   "${cos_sdk_python}" "${cos_uploader}" \
-    --dump "${gzip_partial_path}" \
-    --dump-checksum "${checksum_partial_path}" \
+    --dump "${gzip_path}" \
+    --dump-checksum "${checksum_path}" \
     --config "${config_partial_path}" \
     --timestamp "${timestamp}"
-  rm -f -- "${gzip_partial_path}" "${checksum_partial_path}" "${config_partial_path}"
+  rm -f -- "${gzip_path}" "${checksum_path}" "${config_partial_path}"
 else
   echo "COS upload is disabled; local PostgreSQL backup completed"
 fi
