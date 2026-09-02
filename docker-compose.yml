@@ -17,6 +17,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        GOPROXY: ${GO_MODULE_PROXY:-https://proxy.golang.org,direct}
     image: new-api-local:${NEW_API_IMAGE_TAG:-latest}
     container_name: new-api
     restart: always
