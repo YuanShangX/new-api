@@ -83,7 +83,10 @@ if [[ "${COS_BACKUP_ENABLED:-0}" == "1" ]]; then
   mv -- "${gzip_partial_path}" "${gzip_path}"
   # Write the checksum after the atomic rename so it contains the final COS
   # filename, rather than the temporary local staging filename.
-  sha256sum "${gzip_path}" >"${checksum_partial_path}"
+  (
+    cd "$(dirname -- "${gzip_path}")"
+    sha256sum "$(basename -- "${gzip_path}")"
+  ) >"${checksum_partial_path}"
   mv -- "${checksum_partial_path}" "${checksum_path}"
   age -r "${recipient}" -o "${config_partial_path}" -- "${project_dir}/.env"
 
