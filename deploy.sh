@@ -21,7 +21,7 @@ if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
 fi
 
 git pull --ff-only origin main
-docker compose config --quiet
+docker compose config -q
 
 postgres_id="$(docker compose ps -q postgres)"
 if [[ -z "${postgres_id}" ]] || [[ "$(docker inspect -f '{{.State.Running}}' "${postgres_id}")" != "true" ]]; then
