@@ -9,5 +9,6 @@ Type=oneshot
 User=ubuntu
 Group=ubuntu
 WorkingDirectory=/opt/new-api
+EnvironmentFile=-/etc/new-api/cos.env
 ExecStart=/opt/new-api/scripts/backup-postgres.sh
 Nice=10
