@@ -1,4 +1,4 @@
-api.yuanshang.com {
+api.yuanshang.net {
 	encode zstd gzip
 
 	header Strict-Transport-Security "max-age=31536000"
