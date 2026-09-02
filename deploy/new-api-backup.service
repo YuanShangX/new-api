@@ -1,0 +1,13 @@
+[Unit]
+Description=New API PostgreSQL backup
+Requires=docker.service
+After=docker.service
+ConditionPathExists=/opt/new-api/.env
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/new-api
+ExecStart=/opt/new-api/scripts/backup-postgres.sh
+Nice=10
