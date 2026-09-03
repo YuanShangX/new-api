@@ -1,4 +1,4 @@
-api.yuanshang.net, api.feisite.site {
+api.feisite.site {
 	encode zstd gzip
 
 	header Strict-Transport-Security "max-age=31536000"
