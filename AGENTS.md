@@ -6,20 +6,6 @@ DO NOT send optional commentary
 
 This is an AI API gateway/proxy built with Go. It aggregates 40+ upstream AI providers (OpenAI, Claude, Gemini, Azure, AWS Bedrock, etc.) behind a unified API, with user management, billing, rate limiting, and an admin dashboard.
 
-## Production secrets and data safety
-
-These rules apply to every agent, automation, deployment, backup, Git commit, and GitHub push in this repository:
-
-- Never stage, commit, push, attach, paste into logs, or otherwise publish production `.env` files; PostgreSQL, Redis, or session passwords; API keys or tokens; Tencent COS `SecretId`/`SecretKey`; TLS, SSH, or age private keys; PostgreSQL dumps; database files; uploaded user data; or Docker Volume contents.
-- Placeholder-only files such as `.env.example` and `deploy/cos.env.example` are allowed. They must contain names and documentation only, never working credentials.
-- Production secrets stay outside Git: `/opt/new-api/.env`, `/etc/new-api/cos.env`, and `/etc/new-api/coscmd.conf` on the server. The age decryption private key stays only in the operator's protected Windows backup location; the server and COS receive only the age public recipient and ciphertext.
-- PostgreSQL production data stays in the named Docker Volume `new-api_pg_data`. Database dumps stay under `/opt/new-api/backups/postgres` and Tencent COS, never in the repository. Do not copy a Docker Volume directory into the checkout.
-- Before every commit or push, stage explicit paths, inspect `git status` and `git diff --cached --name-only`, and run `scripts/check-sensitive-files.sh --cached`. Do not use broad staging such as `git add -A` or `git add .` during deployment/operations work.
-- If a protected file is staged, unstage only that exact path and stop the push. Do not print its contents. If a real credential has already reached GitHub, treat it as compromised: revoke/rotate it first, then coordinate history cleanup. Deleting it in a later commit is not sufficient.
-- Never delete or recreate production data, run `docker compose down -v`, or restore over an existing database without explicit confirmation of the exact data target.
-
-For deployment, backup, restore, production-server, or credential-related work, use the project skill at `.agents/skills/production-deploy-safety/SKILL.md` and read `docs/PRODUCTION_SECURITY.md` before mutating Git or the server.
-
 ## Tech Stack
 
 - **Backend**: Go 1.22+, Gin web framework, GORM v2 ORM
