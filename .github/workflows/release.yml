@@ -24,12 +24,8 @@ jobs:
           fetch-depth: 0
       - name: Determine Version
         run: |
-          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
-            VERSION=${GITHUB_REF#refs/tags/}
-          else
-            VERSION=$(git describe --tags --match 'v[0-9]*')
-          fi
-          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          VERSION=$(git describe --tags)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: '1.4.0'
@@ -77,12 +73,8 @@ jobs:
           fetch-depth: 0
       - name: Determine Version
         run: |
-          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
-            VERSION=${GITHUB_REF#refs/tags/}
-          else
-            VERSION=$(git describe --tags --match 'v[0-9]*')
-          fi
-          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          VERSION=$(git describe --tags)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: '1.4.0'
@@ -129,12 +121,8 @@ jobs:
           fetch-depth: 0
       - name: Determine Version
         run: |
-          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
-            VERSION=${GITHUB_REF#refs/tags/}
-          else
-            VERSION=$(git describe --tags --match 'v[0-9]*')
-          fi
-          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          VERSION=$(git describe --tags)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: '1.4.0'
