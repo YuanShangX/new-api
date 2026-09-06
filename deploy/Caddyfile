@@ -1,4 +1,4 @@
-api.feisite.site {
+api.vectorecho.site {
 	encode zstd gzip
 
 	header Strict-Transport-Security "max-age=31536000"
