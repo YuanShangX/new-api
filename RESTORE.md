@@ -83,7 +83,7 @@ gzip -dc /tmp/new-api.dump.gz \
       --exit-on-error --no-owner --no-acl -U root -d new-api
 docker compose up -d new-api
 docker compose ps
-curl --fail https://api.yuanshang.net/api/status
+curl --fail https://api.vectorecho.site/api/status
 ```
 
 If the replacement host is not empty or the dump/database choice is unclear,
