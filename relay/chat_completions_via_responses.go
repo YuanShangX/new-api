@@ -1,6 +1,7 @@
 package relay
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"net/http"
@@ -169,6 +170,19 @@ func relayResponsesRequest(c *gin.Context, info *relaycommon.RelayInfo, adaptor 
 		newApiErr := service.RelayErrorHandler(c.Request.Context(), httpResp, false)
 		service.ResetStatusCode(newApiErr, statusCodeMappingStr)
 		return nil, newApiErr
+	}
+	// Codex may return SSE without Content-Type. Peek without consuming bytes,
+	// so both streaming clients and buffered clients retain the first event.
+	if info.ChannelType == constant.ChannelTypeCodex &&
+		strings.TrimSpace(httpResp.Header.Get("Content-Type")) == "" && httpResp.Body != nil {
+		reader := bufio.NewReader(httpResp.Body)
+		prefix, _ := reader.Peek(6)
+		upstreamStream = strings.HasPrefix(string(prefix), "event:") || strings.HasPrefix(string(prefix), "data:")
+		httpResp.Body = struct {
+			io.Reader
+			io.Closer
+		}{reader, httpResp.Body}
+		info.IsStream = clientStream || upstreamStream
 	}
 
 	if upstreamStream && clientStream {
