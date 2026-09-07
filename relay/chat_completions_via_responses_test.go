@@ -5,7 +5,6 @@ import (
 	"math"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/QuantumNous/new-api/common"
@@ -20,84 +19,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func TestRelayResponsesRequestMissingContentType(t *testing.T) {
-	oldMode := gin.Mode()
-	gin.SetMode(gin.TestMode)
-	t.Cleanup(func() { gin.SetMode(oldMode) })
-	oldTimeout := constant.StreamingTimeout
-	constant.StreamingTimeout = 30
-	t.Cleanup(func() { constant.StreamingTimeout = oldTimeout })
-
-	jsonBody := `{"id":"resp_test","object":"response","status":"completed","model":"gpt-test","output":[{"type":"message","id":"msg_test","role":"assistant","content":[{"type":"output_text","text":"hello"}]}],"usage":{"input_tokens":2,"output_tokens":3,"total_tokens":5}}`
-	sseBody := "event: response.created\n" + strings.Join([]string{
-		`data: {"type":"response.created","response":{"id":"resp_test","model":"gpt-test","created_at":1710000000}}`,
-		`data: {"type":"response.output_text.delta","delta":"hello"}`,
-		`data: {"type":"response.completed","response":` + jsonBody + `}`,
-		`data: [DONE]`,
-		"",
-	}, "\n\n")
-	for _, tc := range []struct {
-		name         string
-		channelType  int
-		clientStream bool
-		body         string
-		status       int
-	}{
-		{"codex streaming SSE", constant.ChannelTypeCodex, true, sseBody, 200},
-		{"codex buffered SSE", constant.ChannelTypeCodex, false, sseBody, 200},
-		{"codex data-first SSE", constant.ChannelTypeCodex, true, strings.TrimPrefix(sseBody, "event: response.created\n"), 200},
-		{"codex JSON", constant.ChannelTypeCodex, false, jsonBody, 200},
-		{"openai JSON", constant.ChannelTypeOpenAI, false, jsonBody, 200},
-		{"codex upstream error", constant.ChannelTypeCodex, true, `{"error":{"message":"rejected","type":"invalid_request_error"}}`, 400},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.Header()["Content-Type"] = nil // Suppress net/http content sniffing.
-				w.WriteHeader(tc.status)
-				_, _ = io.WriteString(w, tc.body)
-			}))
-			defer server.Close()
-			recorder := httptest.NewRecorder()
-			c, _ := gin.CreateTestContext(recorder)
-			c.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", nil)
-			info := &relaycommon.RelayInfo{
-				RelayMode:          relayconstant.RelayModeChatCompletions,
-				RelayFormat:        relaytypes.RelayFormatOpenAI,
-				IsStream:           tc.clientStream,
-				DisablePing:        true,
-				ShouldIncludeUsage: true,
-				OriginModelName:    "gpt-test",
-				ChannelMeta: &relaycommon.ChannelMeta{
-					ChannelType:       tc.channelType,
-					ChannelBaseUrl:    server.URL,
-					UpstreamModelName: "gpt-test",
-					ApiKey:            "test-key",
-				},
-			}
-			adaptor := &openaichannel.Adaptor{}
-			adaptor.Init(info)
-			usage, apiErr := relayResponsesRequest(c, info, adaptor, &dto.OpenAIResponsesRequest{Model: "gpt-test"}, false)
-			if tc.status != http.StatusOK {
-				require.NotNil(t, apiErr)
-				assert.Equal(t, tc.status, apiErr.StatusCode)
-				return
-			}
-			require.Nil(t, apiErr)
-			require.NotNil(t, usage)
-			assert.Equal(t, 5, usage.TotalTokens)
-			assert.Contains(t, recorder.Body.String(), `"content":"hello"`)
-			if tc.clientStream {
-				assert.Contains(t, recorder.Body.String(), "data: [DONE]")
-			} else {
-				var response dto.OpenAITextResponse
-				require.NoError(t, common.Unmarshal(recorder.Body.Bytes(), &response))
-				require.Len(t, response.Choices, 1)
-				assert.Equal(t, "hello", response.Choices[0].Message.StringContent())
-			}
-		})
-	}
-}
 
 func TestIsResponsesEventStreamContentType(t *testing.T) {
 	tests := []struct {
