@@ -132,6 +132,31 @@ func TestMultiprotocolGatewayEndpointTypes(t *testing.T) {
 
 	assert.Equal(t, want, common.GetEndpointTypesByChannelType(constant.ChannelTypeNewAPI, "gpt-5"))
 	assert.Equal(t, want, common.GetEndpointTypesByChannelType(constant.ChannelTypeSub2API, "gpt-5"))
+	assert.Equal(t, []constant.EndpointType{
+		constant.EndpointTypeImageGeneration,
+		constant.EndpointTypeOpenAI,
+	}, common.GetEndpointTypesByChannelType(constant.ChannelTypeOpenAI, "gpt-image-2"))
+}
+
+func TestNormalizeChannelTestEndpoint(t *testing.T) {
+	tests := []struct {
+		name         string
+		channel      *model.Channel
+		modelName    string
+		endpointType string
+		want         string
+	}{
+		{name: "explicit endpoint", modelName: "gpt-image-2", endpointType: "openai", want: "openai"},
+		{name: "Codex defaults to responses", channel: &model.Channel{Type: constant.ChannelTypeCodex}, modelName: "gpt-5", want: string(constant.EndpointTypeOpenAIResponse)},
+		{name: "image model defaults to image generation", channel: &model.Channel{Type: constant.ChannelTypeOpenAI}, modelName: "gpt-image-2.5-sunburst", want: string(constant.EndpointTypeImageGeneration)},
+		{name: "text model keeps automatic endpoint", channel: &model.Channel{Type: constant.ChannelTypeOpenAI}, modelName: "gpt-5", want: ""},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			assert.Equal(t, test.want, normalizeChannelTestEndpoint(test.channel, test.modelName, test.endpointType))
+		})
+	}
 }
 
 func TestCopyChannelRejectsInvalidLegacyProxySettings(t *testing.T) {
